@@ -1,4 +1,8 @@
+#include "WifiManager.hpp"
+#include "Memory.hpp"
+
 // подключение библиотек
+#include <string>
 #include <Wire.h>
 #include "WiFi.h"
 #include <stdlib.h>
@@ -36,12 +40,6 @@
 
 FastBot bot(BOT_TOKEN);
 
-// подключаем библиотеку для считывания и записи на flash-память: 
-#include <EEPROM.h>
-
-// задаем количество байтов, к которым нужно получить доступ:
-#define EEPROM_SIZE 4
-
 const char* ntpServer = "ru.pool.ntp.org";
 
 // создание объекта OLED, адрес I2C - 0x3C
@@ -53,8 +51,12 @@ GyverBME280 bme;
 // Создание объекта энкодера 
 EncButton enc(CLK, DT, SW);
 
-const char* ssid     = "Waflya";
-const char* password = "!ontario@@";
+//const char* ssid     = "Waflya";
+//const char* password = "!ontario@@";
+
+const char* ssid     = "ElisPOCO";
+const char* password = "00000000";
+
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, ntpServer);
 
@@ -86,7 +88,15 @@ struct Data
   uint8_t h; //значения влажности
   uint8_t l; //освещенность
   uint8_t s; //влажность почвы
-};
+} setformem;
+
+struct Timers
+{
+  uint64_t t; //значения температуры
+  uint64_t h; //значения влажности
+  uint64_t l; //освещенность
+  uint64_t s; //влажность почвы
+} timformem;
 
 uint32_t sech0 = 0;
 uint32_t sect0 = 0;
@@ -170,7 +180,7 @@ void core0(void *p)
     a.t = bme.readTemperature();
     a.h = bme.readHumidity();
 
-    a.s = map(value3, 220, 80, 0, 100);
+    a.s = map(value3, 225, 0, 0, 100);
     xQueueSend(_dataSendQueue, &a, pdMS_TO_TICKS(1000));
     vTaskDelay(pdMS_TO_TICKS(4500));
   }
@@ -403,9 +413,9 @@ void DrawSettings(int a, int i)
 
 int WriteSettings(int a, int i)
 {
-  bool ir = 0;
-  bool ir1 = 0;
-  int vibor = 0;
+  bool ir = 0;      // флаг выбора строки в меню настроек
+  bool ir1 = 0;     // флаг настройки конкретного параметра
+  int vibor = 0;    // номер строки для редактирования
 
   DrawSettings(a, i);
 
@@ -440,11 +450,6 @@ int WriteSettings(int a, int i)
             break;
             case EB_TURN:
             a -= enc.dir() * 5;
-            if (i == 0) { EEPROM.write(0, a); }
-            if (i == 1) { EEPROM.write(1, a); }
-            if (i == 2) { EEPROM.write(2, a); }
-            if (i == 3) { EEPROM.write(3, a); }
-            EEPROM.commit();
             break;
           }
           
@@ -455,7 +460,7 @@ int WriteSettings(int a, int i)
       if (vibor == 1)
       {
         if (i == 0) { is_h = !is_h; }
-        if (i == 1) { is_h = !is_h; }
+        if (i == 1) { is_t = !is_t; }
         if (i == 2) { is_l = !is_l; }
         if (i == 3) { is_s = !is_s; }
       }
@@ -475,15 +480,24 @@ int WriteSettings(int a, int i)
             case EB_HOLD:
             break;
             case EB_TURN:
-            if (i == 0) { sech1 -= enc.dir() * 300; }
-            if (i == 1) { sect1 -= enc.dir() * 300; }
-            if (i == 2) { secl1 -= enc.dir() * 300; }
-            if (i == 3) { secs1 -= enc.dir() * 300; }
-            EEPROM.write(4, sech1);
-            EEPROM.write(5, sect1);
-            EEPROM.write(6, secl1);
-            EEPROM.write(7, secs1);
-            EEPROM.commit();
+            switch (i)
+            {
+              case 0:
+              sech1 -= enc.dir() * 300;
+              break;
+              
+              case 1:
+              sect1 -= enc.dir() * 300;
+              break;
+
+              case 2:
+              secl1 -= enc.dir() * 300;
+              break;
+
+              case 3:
+              secs1 -= enc.dir() * 300;
+              break;
+            }
             break;
           }
           DrawSettings(a, i);
@@ -524,6 +538,45 @@ int WriteSettings(int a, int i)
     display.update();
     CheckRelay();
   }
+
+  switch (i)
+  {
+    case 0:
+    setformem.h = a;
+    break;
+    
+    case 1:
+    setformem.t = a;
+    break;
+
+    case 2:
+    setformem.l = a;
+    break;
+
+    case 3:
+    setformem.s = a;
+    break;
+  }
+
+  switch (i)
+  {
+    case 0:
+    timformem.h = sech1;
+    break;
+    
+    case 1:
+    timformem.t = sect1;
+    break;
+
+    case 2:
+    timformem.l = secl1;
+    break;
+
+    case 3:
+    timformem.s = secs1;
+    break;
+  }
+
   return a;
 }
 
@@ -635,20 +688,22 @@ void newMsg(FB_msg& msg)
 
 void setup()
 {
-  EEPROM.begin(EEPROM_SIZE);
-  EEPROM.write(6, 300);
-  EEPROM.commit();
+  Memory::init();
+
+  //Memory::putString(16, std::string("your ssid"));
+  //Memory::putString(64, std::string("your password"));
+  //Memory::commit();
 
   // Пороговые значение для активации реле
-  _h = EEPROM.read(0);
-  _t = EEPROM.read(1);
-  _l = EEPROM.read(2);
-  _s = EEPROM.read(3);
+  _h = setformem.h;
+  _t = setformem.t;
+  _l = setformem.l;
+  _s = setformem.s;
 
-  sech1 = EEPROM.read(4);
-  sect1 = EEPROM.read(5);
-  secl1 = EEPROM.read(6);
-  secs1 = EEPROM.read(7);
+  sech1 = timformem.h;
+  sect1 = timformem.t;
+  secl1 = timformem.l;
+  secs1 = timformem.s;
 
   // Если доп. настройки не нужны  - инициализируем датчик
   bme.begin();
@@ -679,39 +734,35 @@ void setup()
   xTaskCreatePinnedToCore(core0, "Task0", 10000, NULL, 1, &Task0, 0);
   xTaskCreatePinnedToCore(tasklight, "Task1", 1000, NULL, 1, &Task1, 0);
 
-  WiFi.begin(ssid, password);
-  
-  Serial.print("ESP Board MAC Address:  ");
- 
-  Serial.println(WiFi.macAddress());
-  uint32_t sec = millis() / 1000ul;
+  //Serial.println(Memory::getString(16).c_str());
+  //Serial.println(Memory::getString(64).c_str());
 
-  while (WiFi.status() != WL_CONNECTED && sec <= 15)
-  {
-    display.clear();
-    displayDrawString("Connecting to internet.", 0, 0);
-    display.update();
-    sec = millis() / 1000ul;
-  }
+  WifiManager::init();
 
-  if (WiFi.status() == WL_CONNECTED)
+  Serial.println("Try to connect......");
+
+  Serial.println(WifiManager::get_status());
+  Serial.println(WifiManager::ssid.c_str());
+  Serial.println(WifiManager::password.c_str());
+
+  if (WifiManager::get_status() == WL_CONNECTED)
   {
     bot.attach(newMsg);
     is_WiFi = true;
 
     timeClient.begin();
     timeClient.setTimeOffset(10800);
+
+    Serial.print("ESP Board MAC Address:  ");
+    Serial.println(WiFi.macAddress());
+
+    Serial.println("");
+    Serial.println("WiFi connected.");
+    Serial.println("IP address: ");
+    Serial.println(WiFi.localIP());
   }
 
-  Serial.print("ESP Board MAC Address:  ");
-  Serial.println(WiFi.macAddress());
-
   display.clear();
-
-  Serial.println("");
-  Serial.println("WiFi connected.");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
 
   //WiFi.softAP(ssid, password);
   //WiFi.softAP(ssid); // без пароля
@@ -786,8 +837,6 @@ void loop()
   }
 
   CheckRelay();
-
-  //Serial.println(EEPROM.read(6));
   
   // вывести изображение из буфера на экран
   display.update();
