@@ -4,13 +4,10 @@
 // подключение библиотек
 #include <string>
 #include <Wire.h>
-#include "WiFi.h"
 #include <stdlib.h>
 #include <SPI.h>
 #include <EncButton.h>
 #include <GyverOLED.h>
-#include <NTPClient.h>
-#include <WiFiUdp.h>
 #include <GyverBME280.h>
 #include "driver/timer.h"
 
@@ -40,8 +37,6 @@
 
 FastBot bot(BOT_TOKEN);
 
-const char* ntpServer = "ru.pool.ntp.org";
-
 // создание объекта OLED, адрес I2C - 0x3C
 GyverOLED<SSD1306_128x64, OLED_BUFFER> display;
 
@@ -51,14 +46,8 @@ GyverBME280 bme;
 // Создание объекта энкодера 
 EncButton enc(CLK, DT, SW);
 
-//const char* ssid     = "Waflya";
-//const char* password = "!ontario@@";
-
-const char* ssid     = "ElisPOCO";
-const char* password = "00000000";
-
-WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, ntpServer);
+//const char* ssid     = "ElisPOCO";
+//const char* password = "00000000";
 
 int8_t n = 0;
 
@@ -587,11 +576,11 @@ void WriteWifi()
   if (is_WiFi)
   {
     displayDrawString("Подключено: ", 0, 16);
-    displayDrawString(ssid, 70, 16);
+    displayDrawString(WifiManager::ssid.c_str(), 70, 16);
     displayDrawString("ID: ", 0, 28);
     displayDrawString(ID, 40, 28);
     displayDrawString("Время: ", 0, 40);
-    displayDrawString(timeClient.getFormattedTime(), 70, 40);
+    displayDrawString(WifiManager::getTime().c_str(), 70, 40);
   }
   else
   {
@@ -642,7 +631,7 @@ void newMsg(FB_msg& msg)
   {
     if (msg.text == "/data")
     {
-      bot.replyMessage(String("Данные за ")     + timeClient.getFormattedTime() +
+      bot.replyMessage(String("Данные за ")     + WifiManager::getTime().c_str() +
                             "\nВлажность = "    + String(hum) + 
                             "\nТемпература = "  + String(temp) + 
                             "\nОсвещенность = " + String(lum) + 
@@ -690,8 +679,8 @@ void setup()
 {
   Memory::init();
 
-  //Memory::putString(16, std::string("your ssid"));
-  //Memory::putString(64, std::string("your password"));
+  //Memory::putString(0, "your ssid");
+  //Memory::putString(32, std::string("your password"));
   //Memory::commit();
 
   // Пороговые значение для активации реле
@@ -734,8 +723,8 @@ void setup()
   xTaskCreatePinnedToCore(core0, "Task0", 10000, NULL, 1, &Task0, 0);
   xTaskCreatePinnedToCore(tasklight, "Task1", 1000, NULL, 1, &Task1, 0);
 
-  //Serial.println(Memory::getString(16).c_str());
-  //Serial.println(Memory::getString(64).c_str());
+  //Serial.println(Memory::getString(0).c_str());
+  //Serial.println(Memory::getString(32).c_str());
 
   WifiManager::init();
 
@@ -750,16 +739,13 @@ void setup()
     bot.attach(newMsg);
     is_WiFi = true;
 
-    timeClient.begin();
-    timeClient.setTimeOffset(10800);
-
     Serial.print("ESP Board MAC Address:  ");
     Serial.println(WiFi.macAddress());
 
-    Serial.println("");
-    Serial.println("WiFi connected.");
-    Serial.println("IP address: ");
-    Serial.println(WiFi.localIP());
+    //Serial.println("");
+    //Serial.println("WiFi connected.");
+    //Serial.println("IP address: ");
+    //Serial.println(WiFi.localIP());
   }
 
   display.clear();
@@ -841,5 +827,5 @@ void loop()
   // вывести изображение из буфера на экран
   display.update();
 
-  if(is_WiFi) { timeClient.update(); }
+  if(is_WiFi) { WifiManager::on_update(); }
 }

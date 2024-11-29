@@ -5,7 +5,7 @@
 
 void Memory::init()
 {
-  EEPROM.begin(256);
+  EEPROM.begin(64);
 }
 
 void Memory::commit()
