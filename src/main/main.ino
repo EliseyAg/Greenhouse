@@ -573,19 +573,19 @@ void WriteWifi()
 {
   WriteMenu();
 
-  if (is_WiFi)
-  {
+  //if (is_WiFi)
+  //{
     displayDrawString("Подключено: ", 0, 16);
     displayDrawString(WifiManager::ssid.c_str(), 70, 16);
     displayDrawString("ID: ", 0, 28);
     displayDrawString(ID, 40, 28);
     displayDrawString("Время: ", 0, 40);
     displayDrawString(WifiManager::getTime().c_str(), 70, 40);
-  }
-  else
-  {
-    displayDrawString("Нет подключения к интернету!", 0, 16);
-  }
+  //}
+  //else
+  //{
+  //  displayDrawString("Нет подключения к интернету!", 0, 16);
+  //}
 }
 
 //relay
@@ -677,11 +677,10 @@ void newMsg(FB_msg& msg)
 
 void setup()
 {
-  Memory::init();
+  Serial.begin(9600);
+  delay(5000);
 
-  //Memory::putString(0, "your ssid");
-  //Memory::putString(32, std::string("your password"));
-  //Memory::commit();
+  EEPROM.begin(128);
 
   // Пороговые значение для активации реле
   _h = setformem.h;
@@ -708,8 +707,6 @@ void setup()
 
   // сбросить счётчик энкодера
   enc.counter = 0;
- 
-  Serial.begin(9600);
 
   pinMode(PIN_PHOTO_SENSOR, INPUT);
 
@@ -723,30 +720,25 @@ void setup()
   xTaskCreatePinnedToCore(core0, "Task0", 10000, NULL, 1, &Task0, 0);
   xTaskCreatePinnedToCore(tasklight, "Task1", 1000, NULL, 1, &Task1, 0);
 
-  //Serial.println(Memory::getString(0).c_str());
-  //Serial.println(Memory::getString(32).c_str());
-
-  WifiManager::init();
-
-  Serial.println("Try to connect......");
+  Serial.println(WifiManager::init());
 
   Serial.println(WifiManager::get_status());
   Serial.println(WifiManager::ssid.c_str());
-  Serial.println(WifiManager::password.c_str());
+  Serial.println(WifiManager::pass.c_str());
 
-  if (WifiManager::get_status() == WL_CONNECTED)
-  {
+  //if (WifiManager::get_status() == WL_CONNECTED)
+  //{
     bot.attach(newMsg);
     is_WiFi = true;
 
     Serial.print("ESP Board MAC Address:  ");
     Serial.println(WiFi.macAddress());
 
-    //Serial.println("");
-    //Serial.println("WiFi connected.");
-    //Serial.println("IP address: ");
-    //Serial.println(WiFi.localIP());
-  }
+    Serial.println("");
+    Serial.println("WiFi connected.");
+    Serial.println("IP address: ");
+    Serial.println(WiFi.localIP());
+  //}
 
   display.clear();
 

@@ -4,33 +4,43 @@
 #include <NTPClient.h>
 #include <WiFiUdp.h>
 
-std::string WifiManager::ssid = "";
-std::string WifiManager::password = "";
+
+std::string WifiManager::ssid;
+std::string WifiManager::pass;
 
 std::string WifiManager::ntpServer = "ru.pool.ntp.org";
 
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, WifiManager::ntpServer.c_str());
 
-WiFiClass WifiManager::Wifi;
+WiFiClass WifiManager::My_WiFi;
 
 int WifiManager::init()
 {
-  //ssid = Memory::getString(0);
-  //password = Memory::getString(32);
+  int ssid_len = 10;
+  int pass_len = 10;
+  EEPROM.get(0, ssid_len);
+  EEPROM.get(8, pass_len);
+  const char c_ssid[32] = "";
+  const char c_pass[32] = "";
+  EEPROM.get(16, c_ssid);
+  EEPROM.get(64, c_pass);  
 
-  ssid = "your ssid";
-  password = "your password";
+  ssid = std::string(c_ssid);
+  pass = std::string(c_pass);
 
-  WiFi.begin(ssid.c_str(), password.c_str());
+  ssid = ssid.substr(0, ssid_len);
+  pass = pass.substr(0, pass_len);
+
+  My_WiFi.begin(ssid.c_str(), pass.c_str());
   uint32_t sec = millis() / 1000ul;
 
-  while (WiFi.status() != WL_CONNECTED && sec <= 5)
+  while (My_WiFi.status() != WL_CONNECTED && sec <= 5)
   {
     sec = millis() / 1000ul;
   }
 
-  if (WiFi.status() != WL_CONNECTED)
+  if (My_WiFi.status() != WL_CONNECTED)
     return 1;
 
   timeClient.begin();
