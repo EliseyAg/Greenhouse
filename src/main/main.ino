@@ -787,10 +787,9 @@ void loop()
     if (n > 5) n = 0;
     else if (n < 0) n = 5;
   }
-  Serial.println(n);
 
-  //if (millis() / 1000ul - secdis <= 60)
-  //{
+  if (millis() / 1000ul - secdis <= 60)
+  {
     WriteMenu();  
     if (n == 0) WriteData();
     else if (n == 1) _h = WriteSettings(_h, 0);
@@ -798,24 +797,23 @@ void loop()
     else if (n == 3) _l = WriteSettings(_l, 2);
     else if (n == 4) _s = WriteSettings(_s, 3);
     else if (n == 5)      WriteWifi();
-  //}
+  }
 
   Data b;
 
   // Если в очереди есть данные, считываем
-  //if (xQueueReceive(_dataSendQueue, &b, 0) == pdTRUE)
-  //{
-  //  lum = b.l;
-  //  somo = b.s;
-  //  temp = b.t;
-  //  hum = b.h;
-  //}
+  if (xQueueReceive(_dataSendQueue, &b, 0) == pdTRUE)
+  {
+    lum = b.l;
+    somo = b.s;
+    temp = b.t;
+    hum = b.h;
+  }
 
-  //CheckRelay();
+  CheckRelay();
   
   // вывести изображение из буфера на экран
   display.update();
 
-  //if(is_WiFi) { WifiManager::on_update(); }
-  //WifiManager::on_update();
+  WifiManager::on_update();
 }

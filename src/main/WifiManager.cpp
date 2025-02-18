@@ -10,6 +10,8 @@
 #include <ESPAsyncWebServer.h>
 #include <esp_wifi.h>
 
+bool server_started;
+
 #define MAX_CLIENTS 4
 #define WIFI_CHANNEL 6
 
@@ -20,24 +22,6 @@ const IPAddress subnetMask(255, 255, 255, 0);
 const String localIPURL = "http://4.3.2.1";
 const char *cap_ssid = "GreenHouse";
 const char *cap_pass = NULL;
-
-const char index_html[] PROGMEM = R"=====(
-  <!DOCTYPE html> <html>
-    <head>
-      <title>ESP32 Captive Portal</title>
-      <style>
-        body {background-color:#06cc13;}
-        h1 {color: white;}
-        h2 {color: white;}
-      </style>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    </head>
-    <body>
-      <h1>Hello World!</h1>
-      <h2>This is a captive portal example. All requests will be redirected here </h2>
-    </body>
-  </html>
-)=====";
 
 DNSServer dnsServer;
 AsyncWebServer server(80);
@@ -123,8 +107,11 @@ void setUpWebserver(AsyncWebServer &server, const IPAddress &localIP)
 		Serial.println("Served Basic HTML Page");
 	});
 
+  server.addHandler(new CaptivePortalHandler()).setFilter(ON_AP_FILTER);
+
 	// the catch all
 	server.onNotFound([](AsyncWebServerRequest *request) {
+    request->send(200, "text/html", index_html);
 		request->redirect(localIPURL);
 		Serial.print("onnotfound ");
 		Serial.print(request->host());	// This gives some insight into whatever was being requested on the serial monitor
@@ -142,6 +129,7 @@ void WifiManager::addWiFi()
 
 	setUpWebserver(server, localIP);
 	server.begin();
+  server_started = true;
 }
 
 int WifiManager::init()
@@ -181,8 +169,10 @@ int WifiManager::init()
 
 void WifiManager::on_update()
 {
-  timeClient.update();
-  dnsServer.processNextRequest();
+  if (server_started)
+  {
+    dnsServer.processNextRequest();
+  }
 }
 
 
