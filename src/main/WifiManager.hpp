@@ -11,10 +11,13 @@ public:
 
   static wl_status_t get_status() { return My_WiFi.status(); }
   static std::string getTime();
-  
-  static std::string ntpServer;
 
-  static WiFiClass My_WiFi;
+  static void addWiFi();
+
+  static std::string ntpServer;
   static std::string ssid;
   static std::string pass;
+  
+private:
+  static WiFiClass My_WiFi;
 };

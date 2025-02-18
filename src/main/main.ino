@@ -573,19 +573,15 @@ void WriteWifi()
 {
   WriteMenu();
 
-  //if (is_WiFi)
-  //{
-    displayDrawString("Подключено: ", 0, 16);
-    displayDrawString(WifiManager::ssid.c_str(), 70, 16);
-    displayDrawString("ID: ", 0, 28);
-    displayDrawString(ID, 40, 28);
-    displayDrawString("Время: ", 0, 40);
-    displayDrawString(WifiManager::getTime().c_str(), 70, 40);
-  //}
-  //else
-  //{
-  //  displayDrawString("Нет подключения к интернету!", 0, 16);
-  //}
+  displayDrawString("Подключено: ", 0, 16);
+  displayDrawString(WifiManager::ssid.c_str(), 70, 16);
+  displayDrawString("ID: ", 0, 28);
+  displayDrawString(ID, 40, 28);
+  displayDrawString("Время: ", 0, 40);
+  displayDrawString(WifiManager::getTime().c_str(), 70, 40);
+  displayDrawString("Нажмите чтобы изменить сеть", 0, 52);
+  
+  if (enc.click()) { WifiManager::addWiFi(); Serial.println("Pressed"); }
 }
 
 //relay
@@ -766,11 +762,11 @@ void setup()
 
 void loop()
 {
-  if (WiFi.status() == WL_CONNECTED)
-  {
+  //if (WiFi.status() == WL_CONNECTED)
+  //{
     // проверка на сообщения боту
     bot.tick();
-  }
+  //}
 
   // очистить дисплей
   display.clear();  
@@ -791,9 +787,10 @@ void loop()
     if (n > 5) n = 0;
     else if (n < 0) n = 5;
   }
+  Serial.println(n);
 
-  if (millis() / 1000ul - secdis <= 60)
-  {
+  //if (millis() / 1000ul - secdis <= 60)
+  //{
     WriteMenu();  
     if (n == 0) WriteData();
     else if (n == 1) _h = WriteSettings(_h, 0);
@@ -801,23 +798,24 @@ void loop()
     else if (n == 3) _l = WriteSettings(_l, 2);
     else if (n == 4) _s = WriteSettings(_s, 3);
     else if (n == 5)      WriteWifi();
-  }
+  //}
 
   Data b;
 
   // Если в очереди есть данные, считываем
-  if (xQueueReceive(_dataSendQueue, &b, 0) == pdTRUE)
-  {
-    lum = b.l;
-    somo = b.s;
-    temp = b.t;
-    hum = b.h;
-  }
+  //if (xQueueReceive(_dataSendQueue, &b, 0) == pdTRUE)
+  //{
+  //  lum = b.l;
+  //  somo = b.s;
+  //  temp = b.t;
+  //  hum = b.h;
+  //}
 
-  CheckRelay();
+  //CheckRelay();
   
   // вывести изображение из буфера на экран
   display.update();
 
-  if(is_WiFi) { WifiManager::on_update(); }
+  //if(is_WiFi) { WifiManager::on_update(); }
+  //WifiManager::on_update();
 }
