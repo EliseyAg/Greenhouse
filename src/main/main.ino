@@ -677,6 +677,11 @@ void setup()
   delay(5000);
 
   EEPROM.begin(128);
+  EEPROM.put(0, sizeof("Waflya"));
+  EEPROM.put(8, sizeof("!ontario@@"));
+  EEPROM.put(16, "Waflya");
+  EEPROM.put(64, "!ontario@@");
+  EEPROM.commit();
 
   // Пороговые значение для активации реле
   _h = setformem.h;

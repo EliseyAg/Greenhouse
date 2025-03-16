@@ -15,10 +15,10 @@ const char index_html[] PROGMEM = R"=====(
     </head>
     <body>
       <h1>Hello World!</h1>
-      <form>
+      <form class="wifisave" action='wifisave' method="post">
         <p><label>Имя сети: </label><input type="text" name="ssid"></p>
         <p><label>Пароль:   </label><input type="text" name="pass"></p>
-        <p><input type="submit" value="Подтвердить"></p>
+        <p><button class="btn" type="submit">Подтвердить</p>
       </form>
     </body>
   </html>
@@ -66,4 +66,5 @@ public:
   
 private:
   static WiFiClass My_WiFi;
+  static void handleWifiSave();
 };

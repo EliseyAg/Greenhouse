@@ -2,6 +2,7 @@
 #include "Memory.hpp"
 
 #include <Arduino.h>
+#include <SPIFFS.h>
 
 #include <NTPClient.h>
 #include <WiFiUdp.h>
@@ -28,6 +29,12 @@ AsyncWebServer server(80);
 
 std::string WifiManager::ssid;
 std::string WifiManager::pass;
+
+const char* ssidPath = "/ssid.txt";
+const char* passPath = "/pass.txt";
+
+const char* PARAM_INPUT_1 = "ssid";
+const char* PARAM_INPUT_2 = "pass";
 
 std::string WifiManager::ntpServer = "ru.pool.ntp.org";
 
@@ -121,8 +128,52 @@ void setUpWebserver(AsyncWebServer &server, const IPAddress &localIP)
 	});
 }
 
+String readFile(fs::FS &fs, const char * path)
+{ //Чтение файла из spiffs
+  Serial.printf("Reading file: %s\r\n", path);
+  File file = fs.open(path);
+  if(!file || file.isDirectory()){
+    Serial.println("- failed to open file for reading");
+    return String();
+  }
+  String fileContent;
+  while(file.available()){
+    fileContent = file.readStringUntil('\n');
+    break;     
+  }
+  return fileContent;
+}
+
+void writeFile(fs::FS &fs, const char * path, const char * message)
+{ //Функция записи файла в spiffs
+  Serial.printf("Writing file: %s\r\n", path);
+
+  File file = fs.open(path, FILE_WRITE);
+  if(!file){
+    Serial.println("- failed to open file for writing");
+    return;
+  }
+  if(file.print(message)){
+    Serial.println("- file written");
+  } else {
+    Serial.println("- frite failed");
+  }
+}
+
+void initSPIFFS()
+{
+  if (!SPIFFS.begin(true)) {
+    Serial.println("An error has occurred while mounting SPIFFS");
+  }
+  Serial.println("SPIFFS mounted successfully");
+}
+
 void WifiManager::addWiFi()
 {
+  initSPIFFS();
+  ssid = readFile(SPIFFS, ssidPath);
+  pass = readFile(SPIFFS, passPath);
+
   startSoftAccessPoint(cap_ssid, cap_pass, localIP, gatewayIP);
 
 	setUpDNSServer(dnsServer, localIP);
@@ -130,6 +181,37 @@ void WifiManager::addWiFi()
 	setUpWebserver(server, localIP);
 	server.begin();
   server_started = true;
+
+  server.serveStatic("/", SPIFFS, "/");
+    
+    //Получаем данные из формы, если пришел запрос
+    server.on("/", HTTP_POST, [](AsyncWebServerRequest *request)
+    {
+      int params = request->params();
+      for(int i=0;i<params;i++)
+      {
+        AsyncWebParameter* p = request->getParam(i);
+        if(p->isPost())
+        {
+          if (p->name() == PARAM_INPUT_1)
+          { // Получаем имя сети из формы
+            ssid = p->value().c_str();
+            Serial.print("SSID set to: ");
+            Serial.println(ssid);
+            // Write file to save value
+            writeFile(SPIFFS, ssidPath, ssid.c_str());
+          }
+          if (p->name() == PARAM_INPUT_2)
+          { // Получаем пароль из формы
+            pass = p->value().c_str();
+            Serial.print("Password set to: ");
+            Serial.println(pass);
+            // Write file to save value
+            writeFile(SPIFFS, passPath, pass.c_str());
+          }
+        }
+      }
+    }
 }
 
 int WifiManager::init()
