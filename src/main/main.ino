@@ -352,7 +352,7 @@ void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info) {
 void WriteData()
 {
 
-  displayDrawStringInt("Вл. воздухав: ", hum, 0, 16);
+  displayDrawStringInt("Вл. воздуха: ", hum, 0, 16);
   displayDrawStringInt("Темп. воздуха: ", temp, 0, 28);
 
   displayDrawStringInt("Освещенность: ", lum, 0, 40);
