@@ -87,15 +87,10 @@ struct Timers
   uint64_t s; //влажность почвы
 } timformem;
 
-uint32_t sech0 = 0;
-uint32_t sect0 = 0;
-uint32_t secl0 = 0;
-uint32_t secs0 = 0;
-
-uint32_t sech1;
-uint32_t sect1;
-uint32_t secl1;
-uint32_t secs1;
+uint16_t sech1;
+uint16_t sect1;
+uint16_t secl1;
+uint16_t secs1;
 
 uint32_t secdis = 0;
 
