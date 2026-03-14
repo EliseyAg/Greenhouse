@@ -15,7 +15,7 @@ const char index_html[] PROGMEM = R"=====(
     </head>
     <body>
       <h1>Hello World!</h1>
-      <form>
+      <form method="POST">
         <p><label>Имя сети: </label><input type="text" name="ssid"></p>
         <p><label>Пароль:   </label><input type="text" name="pass"></p>
         <p><input type="submit" value="Подтвердить"></p>

@@ -581,7 +581,7 @@ void WriteWifi()
   displayDrawString(WifiManager::getTime().c_str(), 70, 40);
   displayDrawString("Нажмите чтобы изменить сеть", 0, 52);
   
-  if (enc.click()) { WifiManager::addWiFi(); Serial.println("Pressed"); }
+  if (enc.click()) { Serial.println("Pressed"); WifiManager::addWiFi(); }
 }
 
 //relay
@@ -674,9 +674,8 @@ void newMsg(FB_msg& msg)
 void setup()
 {
   Serial.begin(9600);
-  delay(5000);
 
-  EEPROM.begin(128);
+  Memory::init();
 
   // Пороговые значение для активации реле
   _h = setformem.h;

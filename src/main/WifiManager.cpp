@@ -15,6 +15,9 @@ bool server_started;
 #define MAX_CLIENTS 4
 #define WIFI_CHANNEL 6
 
+const char* PARAM_INPUT_1 = "ssid";
+const char* PARAM_INPUT_2 = "pass";
+
 const IPAddress localIP(4, 3, 2, 1);		   // the IP address the web server
 const IPAddress gatewayIP(4, 3, 2, 1);
 const IPAddress subnetMask(255, 255, 255, 0);
@@ -93,7 +96,7 @@ void setUpWebserver(AsyncWebServer &server, const IPAddress &localIP)
 	// B Tier (uncommon)
 	//  server.on("/chrome-variations/seed",[](AsyncWebServerRequest *request){request->send(200);}); //chrome captive portal call home
 	//  server.on("/service/update2/json",[](AsyncWebServerRequest *request){request->send(200);}); //firefox?
-	//  server.on("/chat",[](AsyncWebServerRequest *request){request->send(404);}); //No stop asking Whatsapp, there is no internet connection
+	server.on("/chat",[](AsyncWebServerRequest *request){request->send(404);}); //No stop asking Whatsapp, there is no internet connection
 	//  server.on("/startpage",[](AsyncWebServerRequest *request){request->redirect(localIPURL);});
 
 	// return 404 to webpage icon
@@ -107,6 +110,35 @@ void setUpWebserver(AsyncWebServer &server, const IPAddress &localIP)
 		Serial.println("Served Basic HTML Page");
 	});
 
+  server.on("/", HTTP_POST, [](AsyncWebServerRequest *request)
+  {
+    int params = request->params();
+    Serial.println(params);
+    for(int i=0;i<params;i++)
+    {
+      AsyncWebParameter* p = request->getParam(i);
+      if(p->isPost())
+      {
+        if (p->name() == PARAM_INPUT_1)
+        { // Получаем имя сети из формы
+          WifiManager::ssid = p->value().c_str();
+          EEPROM.put(0, sizeof(WifiManager::ssid));
+          EEPROM.put(16, WifiManager::ssid);
+          EEPROM.commit();
+        }
+        if (p->name() == PARAM_INPUT_2)
+        { // Получаем пароль из формы
+          WifiManager::pass = p->value().c_str();
+          EEPROM.put(8, sizeof(WifiManager::pass));
+          EEPROM.put(64, WifiManager::pass);
+          EEPROM.commit();
+        }
+      }
+    }
+    delay(3000);
+    ESP.restart();
+  });
+
   server.addHandler(new CaptivePortalHandler()).setFilter(ON_AP_FILTER);
 
 	// the catch all
@@ -119,6 +151,8 @@ void setUpWebserver(AsyncWebServer &server, const IPAddress &localIP)
 		Serial.print(request->url());
 		Serial.print(" sent redirect to " + localIPURL + "\n");
 	});
+  
+  //server.begin();
 }
 
 void WifiManager::addWiFi()
@@ -162,6 +196,7 @@ int WifiManager::init()
 
   timeClient.begin();
   timeClient.setTimeOffset(10800);
+  timeClient.update();
 
   return 0;
 }
